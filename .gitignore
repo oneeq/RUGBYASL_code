@@ -12,3 +12,7 @@ data/*
 .RData
 .Renviron
 *.Rproj
+.Rproj.user
+
+figures/*
+!figures/.gitkeep

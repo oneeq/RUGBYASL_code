@@ -68,13 +68,13 @@ sim_power_assoc <- function(effect, tau2 = 0, sigma2, n_sim = 1000,
     re <- rnorm(n_id, 0, sqrt(tau2))
     names(re) <- ids
     sim_data <- rugby
-    sim_data$y_sim <- effect * sim_data$z_rate_asl +
+    sim_data$y_sim <- effect * sim_data$rate_z_asl +
       re[as.character(sim_data$id)] +
       rnorm(nrow(sim_data), 0, sqrt(sigma2))
     fit <- suppressMessages(suppressWarnings(
-      lmer(y_sim ~ z_rate_asl + (1 | id), data = sim_data)))
-    t_val <- coef(summary(fit))["z_rate_asl", "t value"]
-    df_val <- coef(summary(fit))["z_rate_asl", "df"]
+      lmer(y_sim ~ rate_z_asl + (1 | id), data = sim_data)))
+    t_val <- coef(summary(fit))["rate_z_asl", "t value"]
+    df_val <- coef(summary(fit))["rate_z_asl", "df"]
     p_one_sided <- pt(t_val, df = df_val, lower.tail = TRUE)
     if (!is.na(p_one_sided) && p_one_sided < alpha) {
       successes <- successes + 1
@@ -88,7 +88,7 @@ sim_power_assoc <- function(effect, tau2 = 0, sigma2, n_sim = 1000,
 ## ------------------------------------------------------------------
 ## 2. Clinical data import and preparation
 ## ------------------------------------------------------------------
-source(file.path(data_dir, "Rugby_R_2025-03-04_1430.r"))  # REDCap export
+source(file.path(data_dir, "Rugby_R_2025-03-04_1430.r"), encoding = "latin1")  # REDCap export
 
 master <- readxl::read_xlsx(file.path(data_dir, "rugby_analysis_outline_v2.xlsx"), 1)
 zscores <- read_rds(file.path(data_dir, "rugby_z_scores.rds"))
