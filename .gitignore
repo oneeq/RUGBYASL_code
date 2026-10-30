@@ -1,0 +1,14 @@
+# Data files (confidential REDCap exports, imaging derivatives)
+data/*
+!data/.gitkeep
+*.xlsx
+*.tsv
+*.fsgd
+*.mgh
+*.rds
+
+# R
+.Rhistory
+.RData
+.Renviron
+*.Rproj
