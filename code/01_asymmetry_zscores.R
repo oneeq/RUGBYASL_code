@@ -16,20 +16,33 @@ library(freesurferformats)
 library(gghalves)
 
 ## ------------------------------------------------------------------
+## 0. Paths
+## ------------------------------------------------------------------
+# All input files are expected in the "data" folder of this repository
+# (see README); generated figures are written to the "figures" folder.
+# Adjust these two lines only if you use a different layout. Note that
+# relative paths refer to the *current working directory*, not the
+# script location: set the working directory to the repository root
+# (e.g. setwd("path/to/RUGBYASL_code")) before sourcing the scripts.
+data_dir <- "data"
+fig_dir  <- "figures"
+
+
+## ------------------------------------------------------------------
 ## 1. Cohort definitions
 ## ------------------------------------------------------------------
 # OpenNeuro reference dataset (ds000240, "Resting State Perfusion in
 # Healthy Aging"): 63 healthy subjects, wide age range.
-refs <- read.delim("FSGD_ASLREF_PERF.fsgd", skip = 4, sep = " ", fill = TRUE,
+refs <- read.delim(file.path(data_dir, "FSGD_ASLREF_PERF.fsgd"), skip = 4, sep = " ", fill = TRUE,
                    header = FALSE)
 names(refs) <- c("Input", "participant_id", "CLASS")
-refs_info <- read.delim("ASL_participants.tsv")
+refs_info <- read.delim(file.path(data_dir, "ASL_participants.tsv"))
 refs <- left_join(refs, refs_info) %>%
   mutate(AgeGroup = ifelse(Age < 50, "Y", "O"),
          AgeSexGroup = str_c(AgeGroup, Gender))
 
 # Rugby cohort (per concussion event / MRI session)
-rugs <- read.delim("FSGD_RUGBY_PERF.fsgd", skip = 4, sep = " ", fill = TRUE,
+rugs <- read.delim(file.path(data_dir, "FSGD_RUGBY_PERF.fsgd"), skip = 4, sep = " ", fill = TRUE,
                    header = FALSE)
 
 # Quality-control exclusions
@@ -45,13 +58,13 @@ excl.rugby <- c("sub-2100892381_ses-01", "sub-2100897786_ses-01",
 ## ------------------------------------------------------------------
 # ASL perfusion asymmetry (smoothed, 20 mm kernel)
 diffrel.volperf.sm20.aslref <- as_tibble(
-  read.fs.mgh("diff.volperf.sm20.aslref.mgh"))
+  read.fs.mgh(file.path(data_dir, "diff.volperf.sm20.aslref.mgh")))
 diffrel.volperf.sm20.rugby <- as_tibble(
-  read.fs.mgh("diff.volperf.sm20.rugby.mgh", with_header = FALSE))
+  read.fs.mgh(file.path(data_dir, "diff.volperf.sm20.rugby.mgh"), with_header = FALSE))
 
 # Cortical thickness asymmetry (same pipeline)
-diffthx.rugby   <- as_tibble(read.fs.mgh("lh.lh-rh.thickness.sm20.rugby.mgh"))
-diffthx.aslref  <- as_tibble(read.fs.mgh("lh.lh-rh.thickness.sm20.aslref.mgh"))
+diffthx.rugby   <- as_tibble(read.fs.mgh(file.path(data_dir, "lh.lh-rh.thickness.sm20.rugby.mgh")))
+diffthx.aslref  <- as_tibble(read.fs.mgh(file.path(data_dir, "lh.lh-rh.thickness.sm20.aslref.mgh")))
 
 # Apply exclusions
 names(diffrel.volperf.sm20.aslref) <- refs$participant_id
@@ -164,7 +177,7 @@ rugbyexp <- rate_Z_scores %>%
   left_join(thx_rate_Z_scores %>%
               rename(rate_z_thx = rate))
 
-write_rds(rugbyexp, file = "rugby_z_scores.rds")
+write_rds(rugbyexp, file = file.path(data_dir, "rugby_z_scores.rds"))
 
 ## ------------------------------------------------------------------
 ## 7. Figure 3
@@ -199,7 +212,7 @@ plot_zscore_heatmap <- function(dat, ylab_text, filename) {
           panel.background = element_rect(fill = "black")) +
     coord_cartesian(ylim = c(-3, 5)) +
     facet_wrap(. ~ Cohort, scales = "free")
-  ggsave(filename, width = 7, height = 3)
+  ggsave(file.path(fig_dir, filename), width = 7, height = 3)
 }
 
 plot_zscore_heatmap(long_Z_FY,
@@ -227,7 +240,7 @@ plot_rate_boxplot <- function(dat, xlab_text, filename) {
     guides(fill = "none") +
     xlab(xlab_text) +
     ylim(c(0, 0.7))
-  ggsave(filename, width = 3, height = 3)
+  ggsave(file.path(fig_dir, filename), width = 3, height = 3)
 }
 
 plot_rate_boxplot(rate_Z_scores, "ASL perfusion asymmetry",

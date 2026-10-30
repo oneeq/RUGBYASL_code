@@ -38,8 +38,10 @@ RUGBYASL_code/
 
 ## Input data (not included)
 
-The scripts read the following files from the working directory
-(or `data/` if you adapt the paths):
+The scripts read the following files from the repository's `data/`
+folder. Place all input files there before running (they are not
+tracked by git, see `.gitignore`). If you use a different layout,
+adjust `data_dir` / `fig_dir` at the top of each script.
 
 | File | Content |
 | --- | --- |
@@ -60,8 +62,11 @@ available on [OpenNeuro](https://openneuro.org/datasets/ds000240).
 ## Usage
 
 ```r
-# 1) Asymmetry z-scores and rate metric (writes rugby_z_scores.rds
-#    and the Figure 3 PDFs)
+# Set the working directory to the repository root, then:
+setwd("path/to/RUGBYASL_code")
+
+# 1) Asymmetry z-scores and rate metric (writes data/rugby_z_scores.rds
+#    and the Figure 3 PDFs in figures/)
 source("code/01_asymmetry_zscores.R")
 
 # 2) Statistics, power analyses, ROC and Figure 4
@@ -69,8 +74,8 @@ source("code/02_statistics_figures.R")
 ```
 
 Run order matters: script 02 needs `rugby_z_scores.rds` produced by
-script 01. Set the working directory to the project root (or adjust
-paths) before running.
+script 01. All paths are relative to the working directory, so `setwd()`
+to the repository root (or edit `data_dir` / `fig_dir`) before sourcing.
 
 ## Notes
 

@@ -19,6 +19,19 @@ library(simr)
 library(ggeffects)
 
 ## ------------------------------------------------------------------
+## 0. Paths
+## ------------------------------------------------------------------
+# All input files are expected in the "data" folder of this repository
+# (see README); generated figures are written to the "figures" folder.
+# Adjust these two lines only if you use a different layout. Note that
+# relative paths refer to the *current working directory*, not the
+# script location: set the working directory to the repository root
+# (e.g. setwd("path/to/RUGBYASL_code")) before sourcing the scripts.
+data_dir <- "data"
+fig_dir  <- "figures"
+
+
+## ------------------------------------------------------------------
 ## 1. Helper functions
 ## ------------------------------------------------------------------
 not_all_na <- function(x) any(!is.na(x))
@@ -75,10 +88,10 @@ sim_power_assoc <- function(effect, tau2 = 0, sigma2, n_sim = 1000,
 ## ------------------------------------------------------------------
 ## 2. Clinical data import and preparation
 ## ------------------------------------------------------------------
-source(file = "Rugby_R_2025-03-04_1430.r")   # REDCap export
+source(file.path(data_dir, "Rugby_R_2025-03-04_1430.r"))  # REDCap export
 
-master <- readxl::read_xlsx("rugby_analysis_outline_v2.xlsx", 1)
-zscores <- read_rds("rugby_z_scores.rds")
+master <- readxl::read_xlsx(file.path(data_dir, "rugby_analysis_outline_v2.xlsx"), 1)
+zscores <- read_rds(file.path(data_dir, "rugby_z_scores.rds"))
 
 master <- master %>%
   filter(perf == "folder" & !is.na(perf))
@@ -399,7 +412,7 @@ rugby %>%
   theme_classic() +
   xlab("Rate of abnormal vertices with absolute z-score > 2.5") +
   ylab("HIA3 memory recall score")
-ggsave("Rugby_memory_recall_ASL.pdf", width = 4, height = 4)
+ggsave(file.path(fig_dir, "Rugby_memory_recall_ASL.pdf"), width = 4, height = 4)
 
 # Available data for the memory recall score
 table(is.na(rugby$hia3_memory_recall_score))
