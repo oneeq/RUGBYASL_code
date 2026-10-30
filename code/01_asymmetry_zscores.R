@@ -183,7 +183,7 @@ write_rds(rugbyexp, file = file.path(data_dir, "rugby_z_scores.rds"))
 ## 7. Figure 3
 ## ------------------------------------------------------------------
 # Panel colours
-colors10 <- c("Young males" = "#01c552", "Rugby" = "#e1302e")
+colors10 <- c("Young males" = "#4477AA", "Rugby" = "#EE6677")
 
 # Panels A / C: per-vertex z-score heat maps per subject
 plot_zscore_heatmap <- function(dat, ylab_text, filename) {
