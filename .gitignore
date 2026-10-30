@@ -13,6 +13,7 @@ data/*
 .Renviron
 *.Rproj
 .Rproj.user
+.DS_Store
 
 figures/*
 !figures/.gitkeep
