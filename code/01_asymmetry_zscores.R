@@ -8,7 +8,9 @@
 #           FSGD subject lists and OpenNeuro ds000240 participants.tsv
 # =====================================================================
 
-rm(list = ls())
+# Note: no rm(list = ls()) here on purpose - the scripts are designed
+# to be sourced in sequence (01, 02, 03) in the same R session, and
+# script 03 needs the per-vertex z-score maps created by script 01.
 
 library(tidyverse)
 library(fsbrain)

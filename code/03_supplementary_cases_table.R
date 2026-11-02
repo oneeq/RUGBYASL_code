@@ -8,9 +8,9 @@
 # ASL perfusion asymmetry rate. Optionally renders per-case
 # vertex-wise z-score maps on the fsaverage left hemisphere.
 #
-# Run AFTER scripts 01 and 02 in the same R session (needs the
-# `rugby` data frame and `rate_z_asl`; section 4 additionally needs
-# the per-vertex z-score maps `rugby_Z_FY` from script 01).
+# Run AFTER scripts 01 and 02 in the same R session. If the per-vertex
+# z-score maps from script 01 are missing, section 4 sources script 01
+# automatically (the scripts no longer clear the R session).
 # =====================================================================
 
 # ---- Paths ----------------------------------------------------------
@@ -100,7 +100,14 @@ library(rgl)
 # Sanity check: the z-score maps must match the fsaverage lh
 # surface vertex count; adjust template subject if you used
 # e.g. fsaverage6.
-fsaverage_lh <- subject.lh.file(subjects_dir, "fsaverage", "pial")
+fsaverage_lh <- file.path(subjects_dir, "fsaverage", "surf", "lh.pial")
+
+# Ensure the per-vertex z-score maps from script 01 are available
+# (possible because the scripts no longer clear the R session)
+if (!exists("rugby_Z_FY")) {
+  message("rugby_Z_FY not found - sourcing script 01...")
+  source(file.path("code", "01_asymmetry_zscores.R"))
+}
 
 # Select illustrative cases: n highest and n lowest asymmetry rates
 n_cases <- 3
@@ -124,7 +131,7 @@ for (i in seq_len(nrow(cases))) {
     message("No z-score map found for ", subj, " - skipped.")
     next
   }
-  if (length(zmap) != nrow(freesurferformats::read.fs.surface(fsaverage_lh))) {
+  if (length(zmap) != nrow(freesurferformats::read.fs.surface(fsaverage_lh)$vertices)) {
     stop("Vertex count of ", subj, " does not match the fsaverage 
           surface - are the maps really in fsaverage space?")
   }

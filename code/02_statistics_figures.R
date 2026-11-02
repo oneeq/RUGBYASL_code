@@ -9,7 +9,9 @@
 #           Script 1 (rugby_z_scores.rds)
 # =====================================================================
 
-rm(list = ls())
+# Note: no rm(list = ls()) here on purpose - the scripts are designed
+# to be sourced in sequence (01, 02, 03) in the same R session, and
+# script 03 needs the per-vertex z-score maps created by script 01.
 
 library(tidyverse)
 library(lmerTest)
