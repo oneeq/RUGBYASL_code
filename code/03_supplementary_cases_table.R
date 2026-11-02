@@ -152,40 +152,34 @@ for (i in seq_len(nrow(cases))) {
           surface - are the maps really in fsaverage space?")
   }
 
+  # Saturated colour range [-2.5, 2.5]: clamp the data so that vertices
+  # with |z| >= 2.5 (the asymmetry threshold used in the manuscript)
+  # get the full end colours. Widen to c(-6, 6) for a graded display.
+  clim <- c(-2.5, 2.5)
+  zplot <- pmin(pmax(zmap, clim[1]), clim[2])
+
   # Write the map as a temporary morphometry file in the writable
   # shadow copy of fsaverage/surf (overwritten at each loop iteration).
   # Two formats, because fsbrain versions differ: recent versions find
   # "lh.z_case.mgh", while older ones look for the extensionless file
   # "lh.z_case" (curv format). Both are harmless if unused.
   write.fs.mgh(filepath = file.path(fs_shadow_surf, "lh.z_case.mgh"),
-               data = zmap)
+               data = zplot)
   write.fs.curv(filepath = file.path(fs_shadow_surf, "lh.z_case"),
-                data = zmap)
+                data = zplot)
 
-  # Render on the fsaverage left hemisphere. Saturated colour range
-  # [-2.5, 2.5] makes suprathreshold vertices (|z| > 2.5) stand out;
-  # widen to c(-6, 6) for a graded display. Colormaps:
-  # fsbrain::cm.available() (e.g. "RdBu", "RdYlBu", "jet", "inferno").
-  # Several fsbrain versions are in circulation, so try increasingly
-  # simple calls until one works, and report the original error.
-  vis <- tryCatch(
-    fsbrain::vis.subject.morph.native(
-      render_dir, "fsaverage", "z_case",
-      hemi = "lh", surface = "pial",
-      cmap = "RdBu", clim = c(-2.5, 2.5)),
-    error = function(e1) {
-      message("vis.subject.morph.native (full call) failed: ",
-              conditionMessage(e1))
-      tryCatch(
-        fsbrain::vis.subject.morph.native(
-          render_dir, "fsaverage", "z_case", hemi = "lh"),
-        error = function(e2) {
-          message("vis.subject.morph.native (reduced call) failed: ",
-                  conditionMessage(e2))
-          fsbrain::vis.subject.morph.native(
-            render_dir, "fsaverage", "z_case")
-        })
-    })
+  # Render on the fsaverage left hemisphere. The colour scale is
+  # set through makecmap_options (this fsbrain version has no cmap/clim
+  # arguments); the range itself is fixed by clamping the data above.
+  # Colormap: diverging red (z > 0) - white (z = 0) - blue (z < 0),
+  # mirroring the Okabe-Ito figure colours of the manuscript.
+  fsbrain::vis.subject.morph.native(
+    render_dir, "fsaverage", "z_case",
+    hemi = "lh", surface = "pial",
+    makecmap_options = list(
+      colFn = grDevices::colorRampPalette(
+        c("#B2182B", "#F7F7F7", "#2166AC")),
+      n = 256))
 
   Sys.sleep(1)  # let the renderer catch up
   png_file <- file.path(fig_dir,
