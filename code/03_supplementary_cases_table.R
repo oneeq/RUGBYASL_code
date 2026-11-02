@@ -36,6 +36,7 @@ rugby_cases <- rugby %>%
 suppl_cases <- rugby_cases %>%
   arrange(player, concussion_no) %>%
   transmute(
+    `subject`                               = subject,
     `Player`                                = player,
     `Concussion`                            = concussion_no,
     `Player age (years)`                    = round(Age, 1),
@@ -131,10 +132,10 @@ if (!exists("rugby_Z_FY") || !exists("MY_Z_FY")) {
 # cohort (Control_1..Control_3, asymmetry rate closest to the control
 # group median).
 n_cases <- 3
-
+suppl_cases_compl <- suppl_cases[suppl_cases %>% complete.cases(),]
 # Rugby: highest and lowest asymmetry rates
 case_info <- rugby_cases %>%
-  filter(!is.na(rate_z_asl)) %>%
+  filter(is.element(subject, suppl_cases_compl$subject)) %>%
   arrange(rate_z_asl)
 cases <- bind_rows(
   case_info %>% tail(n_cases) %>% arrange(desc(rate_z_asl)) %>%
@@ -181,7 +182,7 @@ for (i in seq_len(nrow(cases))) {
   # |z| >= 6 (the reliability threshold of the z-score pipeline) get
   # the full end colours. Narrow to c(-2.5, 2.5) for a saturated
   # display that highlights the asymmetry threshold of the manuscript.
-  clim <- c(-6, 6)
+  clim <- c(-3, 6)
   zplot <- pmin(pmax(zmap, clim[1]), clim[2])
 
   # Write the map as a temporary morphometry file in the writable
@@ -207,12 +208,15 @@ for (i in seq_len(nrow(cases))) {
     rgloptions = list(windowRect = c(20, 20, 1000, 1000)),
     makecmap_options = list(
       colFn = grDevices::colorRampPalette(
-        c("#B2182B", "#F7F7F7", "#2166AC")),
+        c("#2166AC", "#F7F7F7", "#B2182B")),
       n = 256))
   rgl::title3d(
     main = sprintf("%s: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
                   lab, 100 * rate))
-
+  print(lab)
+  print(subj)
+  print(sprintf("%s: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
+                lab, 100 * rate))
   Sys.sleep(1)  # let the renderer catch up
   png_file <- file.path(fig_dir, sprintf("%s.png", lab))
   rgl.snapshot(png_file)
@@ -233,9 +237,9 @@ for (i in seq_len(nrow(cases))) {
 # standalone scale can be placed next to the assembled supplementary
 # figure in Inkscape. Same palette and range as the renders, so they
 # always match.
-clim <- c(-6, 6)
+#clim <- c(-6, 6)
 n_col <- 256
-bar_cols <- grDevices::colorRampPalette(c("#B2182B", "#F7F7F7", "#2166AC"))(n_col)
+bar_cols <- grDevices::colorRampPalette(c("#2166AC","#F7F7F7", "#B2182B"))(n_col)
 pdf(file.path(fig_dir, "colorbar_z.pdf"), width = 6, height = 1.5)
 old_mar <- par(mar = c(3.5, 1, 1, 1))
 image(x = seq(clim[1], clim[2], length.out = n_col), y = 1,
