@@ -161,16 +161,25 @@ for (i in seq_len(nrow(cases))) {
   # [-2.5, 2.5] makes suprathreshold vertices (|z| > 2.5) stand out;
   # widen to c(-6, 6) for a graded display. Colormaps:
   # fsbrain::cm.available() (e.g. "RdBu", "RdYlBu", "jet", "inferno").
+  # Several fsbrain versions are in circulation, so try increasingly
+  # simple calls until one works, and report the original error.
   vis <- tryCatch(
     fsbrain::vis.subject.morph.native(
       render_dir, "fsaverage", "z_case",
       hemi = "lh", surface = "pial",
       cmap = "RdBu", clim = c(-2.5, 2.5)),
-    error = function(e) {
-      # Fallback for older fsbrain versions
-      fsbrain::vis.subject.surface(
-        render_dir, "fsaverage", hemi = "lh", surface = "pial",
-        morphometry = "z_case")
+    error = function(e1) {
+      message("vis.subject.morph.native (full call) failed: ",
+              conditionMessage(e1))
+      tryCatch(
+        fsbrain::vis.subject.morph.native(
+          render_dir, "fsaverage", "z_case", hemi = "lh"),
+        error = function(e2) {
+          message("vis.subject.morph.native (reduced call) failed: ",
+                  conditionMessage(e2))
+          fsbrain::vis.subject.morph.native(
+            render_dir, "fsaverage", "z_case")
+        })
     })
 
   Sys.sleep(1)  # let the renderer catch up
