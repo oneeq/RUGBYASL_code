@@ -6,7 +6,7 @@
 # Generates one row per concussion event (n = 34), combining the
 # clinical characteristics (Table 1 / REDCap) with the individual
 # ASL perfusion asymmetry rate. Optionally renders per-case
-# vertex-wise z-score maps on the left hemisphere.
+# vertex-wise z-score maps on the fsaverage left hemisphere.
 #
 # Run AFTER scripts 01 and 02 in the same R session (needs the
 # `rugby` data frame and `rate_z_asl`; section 4 additionally needs
@@ -79,16 +79,28 @@ cat("\nQualitative ASL asymmetry reading (n):\n")
 print(table(rugby_cases$mri_asl_anormal.factor, useNA = "ifany"))
 
 ## ------------------------------------------------------------------
-## 4. Optional: render per-case vertex-wise z-score maps (left
-##    hemisphere) for illustrative cases
+## 4. Optional: render per-case vertex-wise z-score maps on the
+##    fsaverage left hemisphere for illustrative cases
 ## ------------------------------------------------------------------
-# Prerequisites: FreeSurfer SUBJECTS_DIR of the rugby cohort (subject
-# IDs must match the fsgd names, e.g. "sub-XXXXXXXXX_ses-01") and
-# the fsbrain and rgl packages (used for surface rendering).
-subjects_dir <- "path/to/your/subjects_dir"   # <-- ADAPT to your setup
+# The vertex-wise asymmetry maps all live in the common fsaverage
+# space (mris_preproc/fsgd workflow), so each case can be rendered
+# directly on the standard fsaverage left-hemisphere surface - no
+# per-subject FreeSurfer directories needed. Prerequisites: a local
+# FreeSurfer installation (for the fsaverage surfaces) and the
+# fsbrain and rgl packages.
+fs_home <- Sys.getenv("FREESURFER_HOME")
+if (fs_home == "") stop("FREESURFER_HOME is not set - please start R 
+                         from a FreeSurfer-configured shell or set 
+                         the environment variable.")
+subjects_dir <- file.path(fs_home, "subjects")   # contains fsaverage
 
 library(fsbrain)
 library(rgl)
+
+# Sanity check: the z-score maps must match the fsaverage lh
+# surface vertex count; adjust template subject if you used
+# e.g. fsaverage6.
+fsaverage_lh <- subject.lh.file(subjects_dir, "fsaverage", "pial")
 
 # Select illustrative cases: n highest and n lowest asymmetry rates
 n_cases <- 3
@@ -100,7 +112,7 @@ cases <- bind_rows(
   case_info %>% tail(n_cases)        # highest rates (marked asymmetry)
 ) %>% distinct()
 
-# Render each case on the left-hemisphere surface
+# Render each case on the fsaverage left hemisphere
 for (i in seq_len(nrow(cases))) {
   subj   <- cases$subject[i]
   player <- cases$player[i]
@@ -112,26 +124,31 @@ for (i in seq_len(nrow(cases))) {
     message("No z-score map found for ", subj, " - skipped.")
     next
   }
+  if (length(zmap) != nrow(freesurferformats::read.fs.surface(fsaverage_lh))) {
+    stop("Vertex count of ", subj, " does not match the fsaverage 
+          surface - are the maps really in fsaverage space?")
+  }
 
-  # Write the map as a morphometry file into the subject's surf dir
-  mgh_file <- file.path(subjects_dir, subj, "surf", "z_asl_sym.mgh")
-  dir.create(dirname(mgh_file), recursive = TRUE, showWarnings = FALSE)
+  # Write the map as a temporary morphometry file in fsaverage/surf
+  # (overwritten at each loop iteration, harmless extra file)
+  mgh_file <- file.path(subjects_dir, "fsaverage", "surf",
+                        "lh.z_case.mgh")
   write.fs.mgh(filepath = mgh_file, data = zmap)
 
-  # Render on the left hemisphere. Saturated colour range [-2.5, 2.5]
-  # makes suprathreshold vertices (|z| > 2.5) stand out; widen to
-  # c(-6, 6) for a graded display. Colormaps: fsbrain::cm.available()
-  # (e.g. "RdBu", "RdYlBu", "jet", "inferno").
+  # Render on the fsaverage left hemisphere. Saturated colour range
+  # [-2.5, 2.5] makes suprathreshold vertices (|z| > 2.5) stand out;
+  # widen to c(-6, 6) for a graded display. Colormaps:
+  # fsbrain::cm.available() (e.g. "RdBu", "RdYlBu", "jet", "inferno").
   vis <- tryCatch(
     fsbrain::vis.subject.morph.native(
-      subjects_dir, subj, "z_asl_sym",
+      subjects_dir, "fsaverage", "z_case",
       hemi = "lh", surface = "pial",
       cmap = "RdBu", clim = c(-2.5, 2.5)),
     error = function(e) {
       # Fallback for older fsbrain versions
       fsbrain::vis.subject.surface(
-        subjects_dir, subj, hemi = "lh", surface = "pial",
-        morphometry = "z_asl_sym")
+        subjects_dir, "fsaverage", hemi = "lh", surface = "pial",
+        morphometry = "z_case")
     })
 
   Sys.sleep(1)  # let the renderer catch up
@@ -144,6 +161,7 @@ for (i in seq_len(nrow(cases))) {
 }
 
 # The saved images can be assembled into a supplementary figure, e.g.
-# "Supplementary Figure X - Individual ASL perfusion z-score maps of
-#  illustrative cases: the three players with the highest and the
-#  three with the lowest asymmetry rates (left hemisphere)."
+# "Supplementary Figure X - Individual ASL perfusion z-score maps on
+#  the fsaverage left hemisphere of illustrative cases: the three
+#  players with the highest and the three with the lowest asymmetry
+#  rates."
