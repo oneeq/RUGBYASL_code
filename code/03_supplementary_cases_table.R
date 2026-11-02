@@ -188,14 +188,17 @@ for (i in seq_len(nrow(cases))) {
 
   # Manual colourbar: the labels and colours below are derived from
   # the same clamping (clim) used for the surface, so they always match.
+  # legend3d() draws a 2D legend into the 3D window directly (bgplot3d()
+  # no longer works reliably in recent rgl versions).
   pal_fun <- grDevices::colorRampPalette(c("#B2182B", "#F7F7F7", "#2166AC"))
   n_col <- 101
   tick_vals <- seq(clim[1], clim[2], length.out = 5)
-  rgl::bgplot3d(legend(
+  rgl::legend3d(
+    x = "topright",
     legend = sprintf("%+.1f", tick_vals),
     fill = pal_fun(n_col)[1 + round((tick_vals - clim[1]) / diff(clim) * (n_col - 1))],
-    title = "z-score (young females as reference)",
-    bty = "n", x = "topright", cex = 0.9))
+    title = "z-score (reference: young females)",
+    bty = "n", cex = 0.9)
 
   Sys.sleep(1)  # let the renderer catch up
   png_file <- file.path(fig_dir,
