@@ -153,9 +153,14 @@ for (i in seq_len(nrow(cases))) {
   }
 
   # Write the map as a temporary morphometry file in the writable
-  # shadow copy of fsaverage/surf (overwritten at each loop iteration)
-  mgh_file <- file.path(fs_shadow_surf, "lh.z_case.mgh")
-  write.fs.mgh(filepath = mgh_file, data = zmap)
+  # shadow copy of fsaverage/surf (overwritten at each loop iteration).
+  # Two formats, because fsbrain versions differ: recent versions find
+  # "lh.z_case.mgh", while older ones look for the extensionless file
+  # "lh.z_case" (curv format). Both are harmless if unused.
+  write.fs.mgh(filepath = file.path(fs_shadow_surf, "lh.z_case.mgh"),
+               data = zmap)
+  write.fs.curv(filepath = file.path(fs_shadow_surf, "lh.z_case"),
+                data = zmap)
 
   # Render on the fsaverage left hemisphere. Saturated colour range
   # [-2.5, 2.5] makes suprathreshold vertices (|z| > 2.5) stand out;
