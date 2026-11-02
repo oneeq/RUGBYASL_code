@@ -14,23 +14,24 @@
 ## ------------------------------------------------------------------
 ## 1. Pseudonymise players
 ## ------------------------------------------------------------------
-# Map each participant id to a stable pseudonym P01, P02, ...
+# Map each participant id to a simple stable pseudonym: 1, 2, 3 ...
 player_lookup <- rugby %>%
   distinct(id) %>%
   arrange(id) %>%
-  mutate(player = str_c("P", str_pad(row_number(), width = 2, pad = "0")))
+  mutate(player = row_number())          # simple pseudonym: 1..22
 
 rugby_cases <- rugby %>%
   left_join(., player_lookup, by = "id") %>%
-  mutate(event_id = str_c(player, "_E", redcap_repeat_instance))
+  mutate(concussion_no = as.numeric(redcap_repeat_instance))
 
 ## ------------------------------------------------------------------
 ## 2. Assemble the supplementary table
 ## ------------------------------------------------------------------
 suppl_cases <- rugby_cases %>%
-  arrange(player, redcap_repeat_instance) %>%
+  arrange(player, concussion_no) %>%
   transmute(
-    `Event ID`                              = event_id,
+    `Player`                                = player,
+    `Concussion`                            = concussion_no,
     `Player age (years)`                    = round(Age, 1),
     `No. of previous concussions`           = as.numeric(history_tbi_no),
     `Concussion context (match/training)`   = as.character(tbi_context),
