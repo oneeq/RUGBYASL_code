@@ -42,9 +42,9 @@ suppl_cases <- rugby_cases %>%
     `Qualitative ASL asymmetry on MRI (Y/N)` =
       case_when(
         is.na(mri_asl_anormal.factor) ~ NA_character_,
-        mri_asl_anormal.factor %in% c("Yes", "yes", "1",
-                                      "Anormal", "Abnormal") ~ "Y",
-        TRUE ~ "N"
+        mri_asl_anormal.factor == "Asymetrie en perfusion" ~ "Y",
+        mri_asl_anormal.factor == "Non" ~ "N",
+        TRUE ~ NA_character_   # other/technical categories -> missing
       )
   )
 
