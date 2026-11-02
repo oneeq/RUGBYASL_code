@@ -120,29 +120,54 @@ fsaverage_lh <- file.path(fs_shadow_surf, "lh.pial")
 
 # Ensure the per-vertex z-score maps from script 01 are available
 # (possible because the scripts no longer clear the R session)
-if (!exists("rugby_Z_FY")) {
-  message("rugby_Z_FY not found - sourcing script 01...")
+if (!exists("rugby_Z_FY") || !exists("MY_Z_FY")) {
+  message("z-score maps not found - sourcing script 01...")
   source(file.path("code", "01_asymmetry_zscores.R"))
 }
 
-# Select illustrative cases: n highest and n lowest asymmetry rates
+# Select illustrative cases: the 3 rugby examinations with the
+# highest asymmetry rates (High_1..High_3), the 3 with the lowest
+# (Low_1..Low_3), and 3 typical young male controls from the reference
+# cohort (Control_1..Control_3, asymmetry rate closest to the control
+# group median).
 n_cases <- 3
+
+# Rugby: highest and lowest asymmetry rates
 case_info <- rugby_cases %>%
   filter(!is.na(rate_z_asl)) %>%
   arrange(rate_z_asl)
 cases <- bind_rows(
-  case_info %>% head(n_cases),       # lowest rates (near-normal)
-  case_info %>% tail(n_cases)        # highest rates (marked asymmetry)
-) %>% distinct()
+  case_info %>% tail(n_cases) %>% arrange(desc(rate_z_asl)) %>%
+    mutate(label = sprintf("High_%d", row_number())),
+  case_info %>% head(n_cases) %>%
+    mutate(label = sprintf("Low_%d", row_number()))
+) %>%
+  transmute(label, subject, rate = rate_z_asl,
+            source = "rugby_Z_FY")
+
+# Controls: young males of the reference cohort (script 01); pick the
+# three subjects with the rate closest to the group median (typical,
+# not extreme controls). Rates computed live with the same metric.
+ctrl_rates <- sapply(MY_Z_FY, function(z) mean(abs(z) > 2.5, na.rm = TRUE))
+ctrl_med   <- median(ctrl_rates)
+ctrl_sel   <- names(sort(abs(ctrl_rates - ctrl_med)))[1:n_cases]
+cases <- bind_rows(
+  cases,
+  tibble(
+    label  = sprintf("Control_%d", seq_along(ctrl_sel)),
+    subject = ctrl_sel,
+    rate   = unname(ctrl_rates[ctrl_sel]),
+    source = "MY_Z_FY"
+  )
+)
 
 # Render each case on the fsaverage left hemisphere
 for (i in seq_len(nrow(cases))) {
-  subj   <- cases$subject[i]
-  player <- cases$player[i]
-  event  <- cases$concussion_no[i]
+  lab  <- cases$label[i]
+  subj <- cases$subject[i]
 
-  # Vertex-wise z-score map of this examination (from script 01)
-  zmap <- rugby_Z_FY[[subj]]
+  # Vertex-wise z-score map of this examination (rugby or control)
+  zmap <- get(cases$source[i])[[subj]]
   if (is.null(zmap)) {
     message("No z-score map found for ", subj, " - skipped.")
     next
@@ -171,13 +196,11 @@ for (i in seq_len(nrow(cases))) {
 
   # Render the fsaverage left hemisphere in the tiled 4-view layout
   # ("t4": lateral, medial, dorsal, ventral angles of the same
-  # hemisphere). Unlike before, no empty space is produced, because
-  # fsbrain's built-in colorbar subplot (draw_colorbar) is NOT used;
-  # the colour scale is drawn manually below. Colormap: diverging
-  # red (z > 0) - white (z = 0) - blue (z < 0). The title reports the
-  # case's asymmetry rate (share of vertices with |z| > 2.5, i.e. the
-  # same metric as in the supplementary table).
-  rate <- cases$rate_z_asl[i]
+  # hemisphere). Colormap: diverging red (z > 0) - white (z = 0) -
+  # blue (z < 0). The title reports the case's asymmetry rate (share
+  # of vertices with |z| > 2.5, the same metric as in the
+  # supplementary table).
+  rate <- cases$rate[i]
   fsbrain::vis.subject.morph.native(
     render_dir, "fsaverage", "z_case",
     hemi = "lh", surface = "pial", views = "t4",
@@ -187,14 +210,11 @@ for (i in seq_len(nrow(cases))) {
         c("#B2182B", "#F7F7F7", "#2166AC")),
       n = 256))
   rgl::title3d(
-    main = sprintf("Player %d, concussion %d: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
-                   player, event, 100 * rate))
-
+    main = sprintf("%s: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
+                  lab, 100 * rate))
 
   Sys.sleep(1)  # let the renderer catch up
-  png_file <- file.path(fig_dir,
-                       sprintf("case_player%02d_concussion%d.png",
-                               player, event))
+  png_file <- file.path(fig_dir, sprintf("%s.png", lab))
   rgl.snapshot(png_file)
   message("Saved ", png_file)
   # rgl renamed rgl.close() to close3d() in recent versions
