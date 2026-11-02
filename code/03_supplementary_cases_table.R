@@ -97,10 +97,26 @@ subjects_dir <- "/Applications/freesurfer/subjects"   # contains fsaverage
 library(fsbrain)
 library(rgl)
 
+# fsbrain expects morphometry files inside <subjects_dir>/<subject>/surf,
+# but a FreeSurfer installation under /Applications is typically read-only
+# (Permission denied when writing lh.z_case.mgh). We therefore render from
+# a small writable SHADOW COPY of fsaverage that contains only the surface
+# files needed for visualisation; the temporary morphometry file is written
+# there instead of into the read-only installation.
+render_dir <- file.path(tempdir(), "fs_subjects")
+fs_shadow_surf <- file.path(render_dir, "fsaverage", "surf")
+dir.create(fs_shadow_surf, recursive = TRUE, showWarnings = FALSE)
+for (fname in c("lh.pial", "lh.white", "lh.curv")) {
+  dst <- file.path(fs_shadow_surf, fname)
+  if (!file.exists(dst)) {
+    file.copy(file.path(subjects_dir, "fsaverage", "surf", fname), dst)
+  }
+}
+
 # Sanity check: the z-score maps must match the fsaverage lh
 # surface vertex count; adjust template subject if you used
 # e.g. fsaverage6.
-fsaverage_lh <- file.path(subjects_dir, "fsaverage", "surf", "lh.pial")
+fsaverage_lh <- file.path(fs_shadow_surf, "lh.pial")
 
 # Ensure the per-vertex z-score maps from script 01 are available
 # (possible because the scripts no longer clear the R session)
@@ -136,10 +152,9 @@ for (i in seq_len(nrow(cases))) {
           surface - are the maps really in fsaverage space?")
   }
 
-  # Write the map as a temporary morphometry file in fsaverage/surf
-  # (overwritten at each loop iteration, harmless extra file)
-  mgh_file <- file.path(subjects_dir, "fsaverage", "surf",
-                        "lh.z_case.mgh")
+  # Write the map as a temporary morphometry file in the writable
+  # shadow copy of fsaverage/surf (overwritten at each loop iteration)
+  mgh_file <- file.path(fs_shadow_surf, "lh.z_case.mgh")
   write.fs.mgh(filepath = mgh_file, data = zmap)
 
   # Render on the fsaverage left hemisphere. Saturated colour range
@@ -148,13 +163,13 @@ for (i in seq_len(nrow(cases))) {
   # fsbrain::cm.available() (e.g. "RdBu", "RdYlBu", "jet", "inferno").
   vis <- tryCatch(
     fsbrain::vis.subject.morph.native(
-      subjects_dir, "fsaverage", "z_case",
+      render_dir, "fsaverage", "z_case",
       hemi = "lh", surface = "pial",
       cmap = "RdBu", clim = c(-2.5, 2.5)),
     error = function(e) {
       # Fallback for older fsbrain versions
       fsbrain::vis.subject.surface(
-        subjects_dir, "fsaverage", hemi = "lh", surface = "pial",
+        render_dir, "fsaverage", hemi = "lh", surface = "pial",
         morphometry = "z_case")
     })
 
