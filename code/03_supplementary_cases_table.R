@@ -181,7 +181,11 @@ for (i in seq_len(nrow(cases))) {
   fsbrain::vis.subject.morph.native(
     render_dir, "fsaverage", "z_case",
     hemi = "lh", surface = "pial", views = "t4",
-    rgloptions = list(windowRect = c(20, 20, 1000, 1000)))
+    rgloptions = list(windowRect = c(20, 20, 1000, 1000)),
+    makecmap_options = list(
+      colFn = grDevices::colorRampPalette(
+        c("#B2182B", "#F7F7F7", "#2166AC")),
+      n = 256))
   rgl::title3d(
     main = sprintf("Player %d, concussion %d: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
                    player, event, 100 * rate))
@@ -204,12 +208,14 @@ for (i in seq_len(nrow(cases))) {
 ## ------------------------------------------------------------------
 ## 5. Standalone colourbar (PDF) for the case renders
 ## ------------------------------------------------------------------
-# The surfaces are rendered with fsbrain's default (viridis) colormap
-# over the clamped range clim. This standalone scale can be placed
-# next to the assembled supplementary figure in Inkscape.
+# The surfaces are rendered with the diverging red (z > 0) - white
+# (z = 0) - blue (z < 0) colormap over the clamped range clim. This
+# standalone scale can be placed next to the assembled supplementary
+# figure in Inkscape. Same palette and range as the renders, so they
+# always match.
 clim <- c(-6, 6)
 n_col <- 256
-bar_cols <- grDevices::hcl.colors(n_col, palette = "Viridis")
+bar_cols <- grDevices::colorRampPalette(c("#B2182B", "#F7F7F7", "#2166AC"))(n_col)
 pdf(file.path(fig_dir, "colorbar_z.pdf"), width = 6, height = 1.5)
 old_mar <- par(mar = c(3.5, 1, 1, 1))
 image(x = seq(clim[1], clim[2], length.out = n_col), y = 1,
