@@ -58,7 +58,7 @@ suppl_cases <- rugby_cases %>%
 # Check completeness
 cat("Rows (should equal number of concussion events, n = 34):",
     nrow(suppl_cases), "\n")
-print(suppl_cases, n = Inf, width = Inf)
+#print(suppl_cases, n = Inf, width = Inf)
 
 ## ------------------------------------------------------------------
 ## 3. Export
@@ -88,11 +88,11 @@ print(table(rugby_cases$mri_asl_anormal.factor, useNA = "ifany"))
 # per-subject FreeSurfer directories needed. Prerequisites: a local
 # FreeSurfer installation (for the fsaverage surfaces) and the
 # fsbrain and rgl packages.
-fs_home <- Sys.getenv("FREESURFER_HOME")
-if (fs_home == "") stop("FREESURFER_HOME is not set - please start R 
-                         from a FreeSurfer-configured shell or set 
-                         the environment variable.")
-subjects_dir <- file.path(fs_home, "subjects")   # contains fsaverage
+#fs_home <- Sys.getenv("FREESURFER_HOME")
+#if (fs_home == "") stop("FREESURFER_HOME is not set - please start R 
+#                         from a FreeSurfer-configured shell or set 
+#                         the environment variable.")
+subjects_dir <- "/Applications/freesurfer/subjects"   # contains fsaverage
 
 library(fsbrain)
 library(rgl)
