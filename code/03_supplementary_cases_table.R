@@ -186,19 +186,6 @@ for (i in seq_len(nrow(cases))) {
     main = sprintf("Player %d, concussion %d: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
                    player, event, 100 * rate))
 
-  # Manual colourbar: the labels and colours below are derived from
-  # the same clamping (clim) used for the surface, so they always match.
-  # legend3d() draws a 2D legend into the 3D window directly (bgplot3d()
-  # no longer works reliably in recent rgl versions).
-  pal_fun <- grDevices::colorRampPalette(c("#B2182B", "#F7F7F7", "#2166AC"))
-  n_col <- 101
-  tick_vals <- seq(clim[1], clim[2], length.out = 5)
-  rgl::legend3d(
-    x = "topright",
-    legend = sprintf("%+.1f", tick_vals),
-    fill = pal_fun(n_col)[1 + round((tick_vals - clim[1]) / diff(clim) * (n_col - 1))],
-    title = "z-score (reference: young females)",
-    bty = "n", cex = 0.9)
 
   Sys.sleep(1)  # let the renderer catch up
   png_file <- file.path(fig_dir,
@@ -213,6 +200,29 @@ for (i in seq_len(nrow(cases))) {
     rgl::rgl.close()
   }
 }
+
+## ------------------------------------------------------------------
+## 5. Standalone colourbar (PDF) for the case renders
+## ------------------------------------------------------------------
+# The surfaces are rendered with fsbrain's default (viridis) colormap
+# over the clamped range clim. This standalone scale can be placed
+# next to the assembled supplementary figure in Inkscape.
+clim <- c(-6, 6)
+n_col <- 256
+bar_cols <- grDevices::hcl.colors(n_col, palette = "Viridis")
+pdf(file.path(fig_dir, "colorbar_z.pdf"), width = 6, height = 1.5)
+old_mar <- par(mar = c(3.5, 1, 1, 1))
+image(x = seq(clim[1], clim[2], length.out = n_col), y = 1,
+      z = matrix(1:n_col, nrow = n_col, ncol = 1),
+      col = bar_cols,
+      xaxt = "n", yaxt = "n", bty = "n",
+      xlab = "Perfusion asymmetry z-score (reference: healthy young females)",
+      ylab = "")
+axis(side = 1, at = seq(clim[1], clim[2], by = 2))
+box()
+par(old_mar)
+invisible(dev.off())
+message("Saved ", file.path(fig_dir, "colorbar_z.pdf"))
 
 # The saved images can be assembled into a supplementary figure, e.g.
 # "Supplementary Figure X - Individual ASL perfusion z-score maps on
