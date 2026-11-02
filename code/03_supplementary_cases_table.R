@@ -169,19 +169,19 @@ for (i in seq_len(nrow(cases))) {
   write.fs.curv(filepath = file.path(fs_shadow_surf, "lh.z_case"),
                 data = zplot)
 
-  # Render the fsaverage left hemisphere in a SINGLE view ("si"), so
-  # the window is filled by the surface without the empty grid slots
-  # that the tiled "t4" layout leaves for missing views. The colour
-  # scale is drawn manually below (fsbrain's built-in colorbar does
-  # not match the clamped range in all versions). Colormap: diverging
+  # Render the fsaverage left hemisphere in the tiled 4-view layout
+  # ("t4": lateral, medial, dorsal, ventral angles of the same
+  # hemisphere). Unlike before, no empty space is produced, because
+  # fsbrain's built-in colorbar subplot (draw_colorbar) is NOT used;
+  # the colour scale is drawn manually below. Colormap: diverging
   # red (z > 0) - white (z = 0) - blue (z < 0). The title reports the
   # case's asymmetry rate (share of vertices with |z| > 2.5, i.e. the
   # same metric as in the supplementary table).
   rate <- cases$rate_z_asl[i]
   fsbrain::vis.subject.morph.native(
     render_dir, "fsaverage", "z_case",
-    hemi = "lh", surface = "pial", views = "si",
-    rgloptions = list(windowRect = c(20, 20, 900, 700)))
+    hemi = "lh", surface = "pial", views = "t4",
+    rgloptions = list(windowRect = c(20, 20, 1000, 1000)))
   rgl::title3d(
     main = sprintf("Player %d, concussion %d: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
                    player, event, 100 * rate))
