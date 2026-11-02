@@ -173,13 +173,22 @@ for (i in seq_len(nrow(cases))) {
   # arguments); the range itself is fixed by clamping the data above.
   # Colormap: diverging red (z > 0) - white (z = 0) - blue (z < 0),
   # mirroring the Okabe-Ito figure colours of the manuscript.
+  # A colourbar is drawn next to the surface (needs a large window),
+  # and the title reports the case's asymmetry rate (share of vertices
+  # with |z| > 2.5, i.e. the same metric as in the supplementary table).
+  rate <- cases$rate_z_asl[i]
   fsbrain::vis.subject.morph.native(
     render_dir, "fsaverage", "z_case",
     hemi = "lh", surface = "pial",
+    rgloptions = list(windowRect = c(20, 20, 1600, 900)),
+    draw_colorbar = TRUE,
     makecmap_options = list(
       colFn = grDevices::colorRampPalette(
         c("#B2182B", "#F7F7F7", "#2166AC")),
       n = 256))
+  rgl::title3d(
+    main = sprintf("Player %d, concussion %d: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
+                   player, event, 100 * rate))
 
   Sys.sleep(1)  # let the renderer catch up
   png_file <- file.path(fig_dir,
