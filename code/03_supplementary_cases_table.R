@@ -152,10 +152,11 @@ for (i in seq_len(nrow(cases))) {
           surface - are the maps really in fsaverage space?")
   }
 
-  # Saturated colour range [-2.5, 2.5]: clamp the data so that vertices
-  # with |z| >= 2.5 (the asymmetry threshold used in the manuscript)
-  # get the full end colours. Widen to c(-6, 6) for a graded display.
-  clim <- c(-2.5, 2.5)
+  # Graded colour range [-6, 6]: clamped so that vertices with
+  # |z| >= 6 (the reliability threshold of the z-score pipeline) get
+  # the full end colours. Narrow to c(-2.5, 2.5) for a saturated
+  # display that highlights the asymmetry threshold of the manuscript.
+  clim <- c(-6, 6)
   zplot <- pmin(pmax(zmap, clim[1]), clim[2])
 
   # Write the map as a temporary morphometry file in the writable
@@ -168,27 +169,33 @@ for (i in seq_len(nrow(cases))) {
   write.fs.curv(filepath = file.path(fs_shadow_surf, "lh.z_case"),
                 data = zplot)
 
-  # Render on the fsaverage left hemisphere. The colour scale is
-  # set through makecmap_options (this fsbrain version has no cmap/clim
-  # arguments); the range itself is fixed by clamping the data above.
-  # Colormap: diverging red (z > 0) - white (z = 0) - blue (z < 0),
-  # mirroring the Okabe-Ito figure colours of the manuscript.
-  # A colourbar is drawn next to the surface (needs a large window),
-  # and the title reports the case's asymmetry rate (share of vertices
-  # with |z| > 2.5, i.e. the same metric as in the supplementary table).
+  # Render the fsaverage left hemisphere in a SINGLE view ("si"), so
+  # the window is filled by the surface without the empty grid slots
+  # that the tiled "t4" layout leaves for missing views. The colour
+  # scale is drawn manually below (fsbrain's built-in colorbar does
+  # not match the clamped range in all versions). Colormap: diverging
+  # red (z > 0) - white (z = 0) - blue (z < 0). The title reports the
+  # case's asymmetry rate (share of vertices with |z| > 2.5, i.e. the
+  # same metric as in the supplementary table).
   rate <- cases$rate_z_asl[i]
   fsbrain::vis.subject.morph.native(
     render_dir, "fsaverage", "z_case",
-    hemi = "lh", surface = "pial",
-    rgloptions = list(windowRect = c(20, 20, 1600, 900)),
-    draw_colorbar = TRUE,
-    makecmap_options = list(
-      colFn = grDevices::colorRampPalette(
-        c("#B2182B", "#F7F7F7", "#2166AC")),
-      n = 256))
+    hemi = "lh", surface = "pial", views = "si",
+    rgloptions = list(windowRect = c(20, 20, 900, 700)))
   rgl::title3d(
     main = sprintf("Player %d, concussion %d: |z| > 2.5 in %.1f%% of left-hemisphere vertices",
                    player, event, 100 * rate))
+
+  # Manual colourbar: the labels and colours below are derived from
+  # the same clamping (clim) used for the surface, so they always match.
+  pal_fun <- grDevices::colorRampPalette(c("#B2182B", "#F7F7F7", "#2166AC"))
+  n_col <- 101
+  tick_vals <- seq(clim[1], clim[2], length.out = 5)
+  rgl::bgplot3d(legend(
+    legend = sprintf("%+.1f", tick_vals),
+    fill = pal_fun(n_col)[1 + round((tick_vals - clim[1]) / diff(clim) * (n_col - 1))],
+    title = "z-score (young females as reference)",
+    bty = "n", x = "topright", cex = 0.9))
 
   Sys.sleep(1)  # let the renderer catch up
   png_file <- file.path(fig_dir,
@@ -196,7 +203,12 @@ for (i in seq_len(nrow(cases))) {
                                player, event))
   rgl.snapshot(png_file)
   message("Saved ", png_file)
-  rgl.close()
+  # rgl renamed rgl.close() to close3d() in recent versions
+  if ("close3d" %in% getNamespaceExports("rgl")) {
+    rgl::close3d()
+  } else {
+    rgl::rgl.close()
+  }
 }
 
 # The saved images can be assembled into a supplementary figure, e.g.
