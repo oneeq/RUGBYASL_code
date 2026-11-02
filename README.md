@@ -19,7 +19,8 @@ analyses and generate the figures reported in the manuscript.
 RUGBYASL_code/
 ├── code/
 │   ├── 01_asymmetry_zscores.R   # z-score pipeline + Figure 3
-│   └── 02_statistics_figures.R  # group/association models + Figure 4
+│   ├── 02_statistics_figures.R  # group/association models + Figure 4
+│   └── 03_supplementary_cases_table.R  # per-event clinical/imaging table
 ├── data/                        # input files (not included, see below)
 ├── figures/                     # generated figures
 └── README.md
@@ -71,6 +72,9 @@ source("code/01_asymmetry_zscores.R")
 
 # 2) Statistics, power analyses, ROC and Figure 4
 source("code/02_statistics_figures.R")
+
+# 3) Supplementary table of individual cases (run in the same session)
+source("code/03_supplementary_cases_table.R")
 ```
 
 Run order matters: script 02 needs `rugby_z_scores.rds` produced by
