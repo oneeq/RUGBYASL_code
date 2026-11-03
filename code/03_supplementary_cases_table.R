@@ -178,10 +178,9 @@ for (i in seq_len(nrow(cases))) {
           surface - are the maps really in fsaverage space?")
   }
 
-  # Graded colour range [-6, 6]: clamped so that vertices with
-  # |z| >= 6 (the reliability threshold of the z-score pipeline) get
-  # the full end colours. Narrow to c(-2.5, 2.5) for a saturated
-  # display that highlights the asymmetry threshold of the manuscript.
+  # Graded colour range [-3, 6], matching the display range of
+  # Figure 3: vertices are clamped so that values <= -3 and >= 6 get
+  # the full end colours.
   clim <- c(-3, 6)
   zplot <- pmin(pmax(zmap, clim[1]), clim[2])
 
@@ -237,7 +236,7 @@ for (i in seq_len(nrow(cases))) {
 # standalone scale can be placed next to the assembled supplementary
 # figure in Inkscape. Same palette and range as the renders, so they
 # always match.
-#clim <- c(-6, 6)
+#clim <- c(-3, 6)
 n_col <- 256
 bar_cols <- grDevices::colorRampPalette(c("#2166AC","#F7F7F7", "#B2182B"))(n_col)
 pdf(file.path(fig_dir, "colorbar_z.pdf"), width = 6, height = 1.5)
